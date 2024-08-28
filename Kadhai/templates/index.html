@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Story Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #container {
+            width: 600px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        #story-box, #audio-box {
+            margin-bottom: 20px;
+        }
+        #story-box {
+            white-space: pre-wrap; /* Preserve formatting */
+        }
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+        input[type="text"], button {
+            width: calc(100% - 120px);
+            padding: 10px;
+            margin-right: 10px;
+        }
+        button {
+            width: 100px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <form id="prompt-form">
+            <input type="text" id="user-prompt" placeholder="Enter your prompt..." autocomplete="off" required>
+            <button type="submit">Generate</button>
+        </form>
+        <div id="story-box"></div>
+        <div id="audio-box"></div>
+    </div>
+
+    <script>
+        document.getElementById('prompt-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const userPrompt = document.getElementById('user-prompt').value;
+            const storyBox = document.getElementById('story-box');
+            const audioBox = document.getElementById('audio-box');
+
+            storyBox.textContent = '';
+            audioBox.innerHTML = '';
+
+            document.getElementById('user-prompt').disabled = true;
+            document.querySelector('button').disabled = true;
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: userPrompt })
+            })
+            .then(response => response.json())
+            .then(data => {
+                storyBox.textContent = 'Story:\n' + data.story;
+
+                const audioPlayer = document.createElement('audio');
+                audioPlayer.controls = true;
+                audioPlayer.src = '/download/' + data.audio;
+                audioBox.appendChild(audioPlayer);
+
+                document.getElementById('user-prompt').disabled = false;
+                document.querySelector('button').disabled = false;
+                document.getElementById('user-prompt').value = '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                storyBox.textContent = 'Error: ' + error.message;
+
+                document.getElementById('user-prompt').disabled = false;
+                document.querySelector('button').disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
