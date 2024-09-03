@@ -32,12 +32,12 @@ def generate_tamil_story(prompt: str) -> str:
     return tamil_story
 
 def text_to_speech_file(text: str) -> str:
-    output_directory = "audio_files"
+    output_directory = "Kadhai/audio_files"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
     response = elevenlabs_client.text_to_speech.convert(
-        voice_id="gCr8TeSJgJaeaIoV4RWH",
+        voice_id="Xb7hH8MSUJpSbSDYk0k2",
         output_format="mp3_22050_32",
         text=text,
         model_id="eleven_turbo_v2_5",
@@ -49,7 +49,7 @@ def text_to_speech_file(text: str) -> str:
         ),
     )
 
-    save_file_path = os.path.join(output_directory, f"{uuid.uuid4()}.mp3")
+    save_file_path = os.path.join(output_directory, f"output.mp3")
     print(f"Saving file to: {save_file_path}")
 
     with open(save_file_path, "wb") as f:
@@ -86,7 +86,7 @@ def generate():
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    file_path = os.path.join("audio_files", filename)
+    file_path = os.path.join("Kadhai/audio_files", filename)
     if os.path.exists(file_path):
         return send_file(file_path, as_attachment=False)  # Set as_attachment=False to stream the file
     else:

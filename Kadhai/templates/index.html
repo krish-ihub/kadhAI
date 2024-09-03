@@ -3,106 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Story Generator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        #container {
-            width: 600px;
-            background: white;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        #story-box, #audio-box {
-            margin-bottom: 20px;
-        }
-        #story-box {
-            white-space: pre-wrap; /* Preserve formatting */
-        }
-        audio {
-            width: 100%;
-            margin-top: 10px;
-        }
-        input[type="text"], button {
-            width: calc(100% - 120px);
-            padding: 10px;
-            margin-right: 10px;
-        }
-        button {
-            width: 100px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #28a745;
-            color: white;
-            cursor: pointer;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-    </style>
+    <title>kadhAI UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
 </head>
 <body>
-    <div id="container">
-        <form id="prompt-form">
-            <input type="text" id="user-prompt" placeholder="Enter your prompt..." autocomplete="off" required>
-            <button type="submit">Generate</button>
-        </form>
-        <div id="story-box"></div>
-        <div id="audio-box"></div>
+    <div class="container">
+        <header class="header">
+            <h1>kadh.Ai</h1>
+        </header>
+
+        <div class="main-content">
+            <div class="text-section">
+                <input id="prompt-input" placeholder="Enter your story prompt here...">
+                <button id="generate-button" class="generate-button" onclick="generateStory()">Generate Story</button>
+
+                <!-- Story Content Section with Loading Animation -->
+                <div class="story-content" id="story-content">
+                    <dotlottie-player id="loading-animation"
+                        src="https://lottie.host/98069e34-1ff0-4bff-9e06-37c69e549a21/N65NQ1RhFZ.json"
+                        background="transparent" speed="1" style="width: 100px; height: 100px; display: none;"
+                        loop autoplay>
+                    </dotlottie-player>
+                </div>          
+            </div>
+
+            <div class="image-gallery">
+                <img src="{{ url_for('static', filename='image1.jpg') }}" alt="Gardening Image 1">
+                <img src="{{ url_for('static', filename='image2.jpg') }}" alt="Gardening Image 2">
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="audio-control">
+                <audio id="audio-player" controls style="display: none;">
+                    <source id="audio-source" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            <div class="action-buttons">
+                <button class="generate-button" onclick="generateStory()">Generate Video</button>
+                <button class="download-button" id="download-button" disabled>Download</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        document.getElementById('prompt-form').addEventListener('submit', function(event) {
-            event.preventDefault();
+        async function generateStory() {
+            const prompt = document.getElementById('prompt-input').value;
+            const storyContent = document.getElementById('story-content');
+            const loadingAnimation = document.getElementById('loading-animation');
+            const generateButton = document.getElementById('generate-button');
+            const audioPlayer = document.getElementById('audio-player');
+            const downloadButton = document.getElementById('download-button');
 
-            const userPrompt = document.getElementById('user-prompt').value;
-            const storyBox = document.getElementById('story-box');
-            const audioBox = document.getElementById('audio-box');
+            // Disable the generate button and show loading animation
+            generateButton.disabled = true;
+            loadingAnimation.style.display = 'block';
+            storyContent.textContent = '';
+            audioPlayer.style.display = 'none';
+            downloadButton.disabled = true;
 
-            storyBox.textContent = '';
-            audioBox.innerHTML = '';
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
 
-            document.getElementById('user-prompt').disabled = true;
-            document.querySelector('button').disabled = true;
+                const data = await response.json();
 
-            fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: userPrompt })
-            })
-            .then(response => response.json())
-            .then(data => {
-                storyBox.textContent = 'Story:\n' + data.story;
+                if (response.ok) {
+                    // Display the generated story
+                    loadingAnimation.style.display = 'none';
+                    storyContent.textContent = data.story;
 
-                const audioPlayer = document.createElement('audio');
-                audioPlayer.controls = true;
-                audioPlayer.src = '/download/' + data.audio;
-                audioBox.appendChild(audioPlayer);
-
-                document.getElementById('user-prompt').disabled = false;
-                document.querySelector('button').disabled = false;
-                document.getElementById('user-prompt').value = '';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                storyBox.textContent = 'Error: ' + error.message;
-
-                document.getElementById('user-prompt').disabled = false;
-                document.querySelector('button').disabled = false;
-            });
-        });
+                    // Set up the audio player and download button
+                    document.getElementById('audio-source').src = `/download/${data.audio}`;
+                    audioPlayer.load();
+                    audioPlayer.style.display = 'block';
+                    downloadButton.disabled = false;
+                    downloadButton.onclick = () => window.open(`/download/${data.audio}`);
+                } else {
+                    alert(data.error);
+                }
+            } catch (error) {
+                alert('An error occurred while generating the story. Please try again.');
+                console.error(error);
+            } finally {
+                // Hide the loading animation and enable the generate button after completion
+                loadingAnimation.style.display = 'none';
+                generateButton.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
